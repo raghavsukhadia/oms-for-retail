@@ -1,0 +1,420 @@
+// Tenant Database Schema (Per-tenant data)
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/tenant-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TENANT_DATABASE_URL")
+}
+
+// Dynamic Role System
+model Role {
+  roleId          String   @id @default(uuid()) @map("role_id")
+  roleName        String   @unique @map("role_name")
+  roleDescription String?  @map("role_description")
+  roleColor       String?  @map("role_color")
+  roleLevel       Int      @default(0) @map("role_level") // For hierarchy (0 = highest)
+  isSystemRole    Boolean  @default(false) @map("is_system_role") // Prevent deletion
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  rolePermissionId String   @id @default(uuid()) @map("role_permission_id")
+  roleId           String   @map("role_id")
+  resource         String   // e.g., 'vehicles', 'users', 'locations'
+  action           String   // e.g., 'create', 'read', 'update', 'delete'
+  conditions       Json     @default("{}") // For conditional permissions
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  role Role @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+
+  @@unique([roleId, resource, action])
+  @@map("role_permissions")
+}
+
+// Core Models
+model Location {
+  locationId     String   @id @default(uuid()) @map("location_id")
+  locationName   String   @map("location_name")
+  address        String?
+  city           String?
+  state          String?
+  country        String?
+  postalCode     String?  @map("postal_code")
+  contactPerson  String?  @map("contact_person")
+  contactMobile  String?  @map("contact_mobile")
+  contactEmail   String?  @map("contact_email")
+  status         String   @default("active")
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users    User[]
+  vehicles Vehicle[]
+
+  @@map("locations")
+}
+
+model Department {
+  departmentId   String   @id @default(uuid()) @map("department_id")
+  departmentName String   @map("department_name")
+  colorCode      String?  @map("color_code")
+  description    String?
+  headUserId     String?  @map("head_user_id")
+  status         String   @default("active")
+  config         Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users    User[]
+  headUser User?  @relation("DepartmentHead", fields: [headUserId], references: [userId], onDelete: SetNull)
+
+  @@map("departments")
+}
+
+model User {
+  userId         String      @id @default(uuid()) @map("user_id")
+  email          String      @unique
+  passwordHash   String      @map("password_hash")
+  firstName      String?     @map("first_name")
+  lastName       String?     @map("last_name")
+  mobileNumber   String?     @map("mobile_number")
+  address        String?
+  roleId         String      @map("role_id") // Changed from role enum to roleId foreign key
+  departmentId   String?     @map("department_id")
+  locationId     String?     @map("location_id")
+  permissions    Json        @default("{}") // Additional custom permissions
+  preferences    Json        @default("{}")
+  status         String      @default("active")
+  lastLoginAt    DateTime?   @map("last_login_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  role                Role        @relation(fields: [roleId], references: [roleId], onDelete: Restrict)
+  department          Department? @relation(fields: [departmentId], references: [departmentId], onDelete: SetNull)
+  location            Location?   @relation(fields: [locationId], references: [locationId], onDelete: SetNull)
+  headedDepartments   Department[] @relation("DepartmentHead")
+  
+  // Vehicle relations
+  salesVehicles       Vehicle[] @relation("VehicleSalesperson")
+  coordinatedVehicles Vehicle[] @relation("VehicleCoordinator")
+  supervisedVehicles  Vehicle[] @relation("VehicleSupervisor")
+  createdVehicles     Vehicle[] @relation("VehicleCreator")
+
+  // Other relations
+  salesPerson       SalesPerson? @relation("SalesPersonUser")
+  managedSalespeople SalesPerson[] @relation("SalesPersonManager")
+  installations     Installation[] @relation("Installer")
+  qualityChecks     Installation[] @relation("QualityChecker")
+  workflowInstances WorkflowInstance[]
+  auditLogs         AuditLog[]
+  uploadedMedia     MediaFile[]
+  notifications     Notification[]
+  createdNotifications Notification[] @relation("NotificationCreator")
+  createdPayments   Payment[]
+
+  @@map("users")
+}
+
+model SalesPerson {
+  salespersonId      String   @id @default(uuid()) @map("salesperson_id")
+  userId             String   @unique @map("user_id")
+  employeeCode       String?  @map("employee_code")
+  territory          String?
+  commissionRate     Decimal? @map("commission_rate") @db.Decimal(5, 2)
+  targetAmount       Decimal? @map("target_amount") @db.Decimal(12, 2)
+  managerId          String?  @map("manager_id")
+  status             String   @default("active")
+  performanceMetrics Json     @default("{}") @map("performance_metrics")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User  @relation("SalesPersonUser", fields: [userId], references: [userId], onDelete: Cascade)
+  manager User? @relation("SalesPersonManager", fields: [managerId], references: [userId], onDelete: SetNull)
+
+  @@map("sales_persons")
+}
+
+model Vehicle {
+  vehicleId            String   @id @default(uuid()) @map("vehicle_id")
+  carNumber            String   @unique @map("car_number")
+  ownerName            String   @map("owner_name")
+  ownerMobile          String?  @map("owner_mobile")
+  ownerEmail           String?  @map("owner_email")
+  ownerAddress         String?  @map("owner_address")
+  modelName            String?  @map("model_name")
+  brandName            String?  @map("brand_name")
+  vehicleType          String?  @map("vehicle_type")
+  locationId           String?  @map("location_id")
+  salespersonId        String?  @map("salesperson_id")
+  coordinatorId        String?  @map("coordinator_id")
+  supervisorId         String?  @map("supervisor_id")
+  inwardDate           DateTime? @map("inward_date") @db.Date
+  expectedDeliveryDate DateTime? @map("expected_delivery_date") @db.Date
+  actualDeliveryDate   DateTime? @map("actual_delivery_date") @db.Date
+  status               String   @default("pending")
+  vehicleDetails       Json     @default("{}") @map("vehicle_details")
+  customFields         Json     @default("{}") @map("custom_fields")
+  createdBy            String?  @map("created_by")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  location     Location? @relation(fields: [locationId], references: [locationId], onDelete: SetNull)
+  salesperson  User?     @relation("VehicleSalesperson", fields: [salespersonId], references: [userId], onDelete: SetNull)
+  coordinator  User?     @relation("VehicleCoordinator", fields: [coordinatorId], references: [userId], onDelete: SetNull)
+  supervisor   User?     @relation("VehicleSupervisor", fields: [supervisorId], references: [userId], onDelete: SetNull)
+  creator      User?     @relation("VehicleCreator", fields: [createdBy], references: [userId], onDelete: SetNull)
+
+  installations     Installation[]
+  mediaFiles        MediaFile[]
+  payments          Payment[]
+
+  @@index([status], map: "idx_vehicles_status")
+  @@index([locationId], map: "idx_vehicles_location")
+  @@index([salespersonId], map: "idx_vehicles_salesperson")
+  @@map("vehicles")
+}
+
+model Workflow {
+  workflowId    String   @id @default(uuid()) @map("workflow_id")
+  workflowName  String   @map("workflow_name")
+  workflowType  String   @map("workflow_type")
+  stages        Json     @default("[]")
+  rules         Json     @default("{}")
+  notifications Json     @default("{}")
+  status        String   @default("active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  instances WorkflowInstance[]
+
+  @@map("workflows")
+}
+
+model WorkflowInstance {
+  instanceId     String   @id @default(uuid()) @map("instance_id")
+  workflowId     String?  @map("workflow_id")
+  entityType     String   @map("entity_type")
+  entityId       String   @map("entity_id")
+  currentStage   String   @map("current_stage")
+  stageData      Json     @default("{}") @map("stage_data")
+  stageHistory   Json     @default("[]") @map("stage_history")
+  status         String   @default("in_progress")
+  assignedTo     String?  @map("assigned_to")
+  startedAt      DateTime @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workflow Workflow? @relation(fields: [workflowId], references: [workflowId], onDelete: SetNull)
+  assignee User?     @relation(fields: [assignedTo], references: [userId], onDelete: SetNull)
+  // Note: vehicle relation removed to allow flexible entityId usage for both vehicles and products
+
+  @@index([entityType, entityId], map: "idx_workflow_instances_entity")
+  @@index([status], map: "idx_workflow_instances_status")
+  @@map("workflow_instances")
+}
+
+model ProductCategory {
+  categoryId       String            @id @default(uuid()) @map("category_id")
+  categoryName     String            @map("category_name")
+  parentCategoryId String?           @map("parent_category_id")
+  description      String?
+  status           String            @default("active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  parentCategory ProductCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [categoryId], onDelete: SetNull)
+  subCategories  ProductCategory[] @relation("CategoryHierarchy")
+  products       Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  productId             String   @id @default(uuid()) @map("product_id")
+  productName           String   @map("product_name")
+  brandName             String?  @map("brand_name")
+  categoryId            String?  @map("category_id")
+  price                 Decimal? @db.Decimal(10, 2)
+  installationTimeHours Int?     @map("installation_time_hours")
+  specifications        Json     @default("{}")
+  status                String   @default("active")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  // Relations
+  category      ProductCategory? @relation(fields: [categoryId], references: [categoryId], onDelete: SetNull)
+  installations Installation[]
+
+  @@map("products")
+}
+
+model Installation {
+  installationId      String   @id @default(uuid()) @map("installation_id")
+  vehicleId           String?  @map("vehicle_id")
+  productId           String?  @map("product_id")
+  quantity            Int      @default(1)
+  amount              Decimal? @db.Decimal(10, 2)
+  installationDate    DateTime? @map("installation_date") @db.Date
+  installerId         String?  @map("installer_id")
+  qualityCheckedBy    String?  @map("quality_checked_by")
+  qualityCheckDate    DateTime? @map("quality_check_date") @db.Date
+  status              String   @default("pending")
+  installationNotes   String?  @map("installation_notes")
+  installationDetails Json     @default("{}") @map("installation_details")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  vehicle        Vehicle? @relation(fields: [vehicleId], references: [vehicleId], onDelete: SetNull)
+  product        Product? @relation(fields: [productId], references: [productId], onDelete: SetNull)
+  installer      User?    @relation("Installer", fields: [installerId], references: [userId], onDelete: SetNull)
+  qualityChecker User?    @relation("QualityChecker", fields: [qualityCheckedBy], references: [userId], onDelete: SetNull)
+
+  @@map("installations")
+}
+
+model Payment {
+  paymentId       String   @id @default(uuid()) @map("payment_id")
+  vehicleId       String   @map("vehicle_id")
+  amount          Decimal  @db.Decimal(10, 2)
+  paidAmount      Decimal  @default(0) @db.Decimal(10, 2) @map("paid_amount")
+  outstandingAmount Decimal @default(0) @db.Decimal(10, 2) @map("outstanding_amount")
+  paymentMethod   String?  @map("payment_method") // 'cash', 'card', 'bank_transfer', 'cheque', 'online'
+  transactionId   String?  @map("transaction_id")
+  referenceNumber String?  @map("reference_number")
+  bankDetails     Json?    @default("{}") @map("bank_details")
+  paymentDate     DateTime? @map("payment_date")
+  dueDate         DateTime? @map("due_date")
+  status          String   @default("pending") // 'pending', 'partial', 'paid', 'overdue'
+  notes           String?
+  invoiceNumber   String?  @map("invoice_number")
+  workflowStage   String?  @map("workflow_stage")
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [vehicleId], onDelete: Cascade)
+  creator   User?   @relation(fields: [createdBy], references: [userId], onDelete: SetNull)
+
+  @@index([vehicleId], map: "idx_payments_vehicle")
+  @@index([status], map: "idx_payments_status")
+  @@index([dueDate], map: "idx_payments_due_date")
+  @@map("payments")
+}
+
+model MediaFile {
+  fileId           String   @id @default(uuid()) @map("file_id")
+  entityType       String   @map("entity_type")
+  entityId         String   @map("entity_id")
+  fileCategory     String   @map("file_category")
+  fileSubcategory  String?  @map("file_subcategory")
+  originalFilename String   @map("original_filename")
+  storedFilename   String   @map("stored_filename")
+  filePath         String   @map("file_path")
+  fileSize         BigInt   @map("file_size")
+  mimeType         String   @map("mime_type")
+  fileExtension    String   @map("file_extension")
+  width            Int?
+  height           Int?
+  duration         Int?
+  storageProvider  String   @default("local") @map("storage_provider")
+  cdnUrl           String?  @map("cdn_url")
+  isPublic         Boolean  @default(false) @map("is_public")
+  workflowStage    String?  @map("workflow_stage")
+  metadata         Json     @default("{}")
+  tags             Json     @default("[]")
+  uploadedBy       String?  @map("uploaded_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  // Relations
+  uploader User?    @relation(fields: [uploadedBy], references: [userId], onDelete: SetNull)
+  vehicle  Vehicle? @relation(fields: [entityId], references: [vehicleId], onDelete: Cascade)
+
+  @@index([entityType, entityId], map: "idx_media_entity")
+  @@index([fileCategory, fileSubcategory], map: "idx_media_category")
+  @@map("media_files")
+}
+
+model SystemConfig {
+  configId       String   @id @default(uuid()) @map("config_id")
+  configCategory String   @map("config_category")
+  configKey      String   @map("config_key")
+  configValue    Json     @map("config_value")
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([configCategory, configKey])
+  @@map("system_config")
+}
+
+model AuditLog {
+  logId      String   @id @default(uuid()) @map("log_id")
+  userId     String?  @map("user_id")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
+
+  @@index([userId, createdAt], map: "idx_audit_logs_user")
+  @@index([entityType, entityId], map: "idx_audit_logs_entity")
+  @@map("audit_logs")
+}
+
+model Notification {
+  id               Int       @id @default(autoincrement())
+  notificationId   String    @map("notification_id")
+  userId           String    @map("user_id")
+  type             String    // 'info', 'success', 'warning', 'error'
+  title            String
+  message          String
+  actionLabel      String?   @map("action_label")
+  actionUrl        String?   @map("action_url")
+  entityType       String?   @map("entity_type")
+  entityId         String?   @map("entity_id")
+  readAt           DateTime? @map("read_at")
+  createdBy        String?   @map("created_by")
+  expiresAt        DateTime? @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user    User  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  creator User? @relation("NotificationCreator", fields: [createdBy], references: [userId], onDelete: SetNull)
+
+  @@index([userId, readAt], map: "idx_notifications_user_read")
+  @@index([notificationId], map: "idx_notifications_notification_id")
+  @@index([entityType, entityId], map: "idx_notifications_entity")
+  @@map("notifications")
+}
+

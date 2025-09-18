@@ -1,0 +1,36 @@
+{
+  "name": "@omsms/database",
+  "version": "1.0.0",
+  "description": "Database schemas and migrations for OMSMS",
+  "scripts": {
+    "setup": "node scripts/setup-databases.js",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:reset": "prisma migrate reset",
+    "seed": "tsx seeds/index.ts",
+    "seed:tenant": "node scripts/seed-tenant-data.js",
+    "reset:users": "node scripts/reset-and-seed-users.js",
+    "debug:permissions": "node scripts/debug-user-permissions.js",
+    "setup:tenant": "node scripts/setup-demo-tenant.js",
+    "setup:complete": "node scripts/setup-complete.js",
+    "studio": "prisma studio",
+    "studio:master": "prisma studio --schema=prisma/master-schema.prisma",
+    "studio:tenant": "prisma studio --schema=prisma/tenant-schema.prisma",
+    "generate": "npm run generate:master && npm run generate:tenant",
+    "generate:master": "prisma generate --schema=prisma/master-schema.prisma",
+    "generate:tenant": "prisma generate --schema=prisma/tenant-schema.prisma",
+    "db:push:master": "prisma db push --schema=prisma/master-schema.prisma",
+    "db:push:tenant": "prisma db push --schema=prisma/tenant-schema.prisma",
+    "format": "prisma format --schema=prisma/master-schema.prisma && prisma format --schema=prisma/tenant-schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.5.2",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.2.1",
+    "prisma": "^5.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.6",
+    "tsx": "^3.14.0"
+  }
+}

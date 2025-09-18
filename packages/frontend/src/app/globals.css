@@ -1,0 +1,291 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Theme - OMSMS Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* OMSMS Custom Status Colors */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 32.1 94.6% 43.7%;
+    --warning-foreground: 355.7 100% 97.3%;
+    --info: 221.2 83.2% 53.3%;
+    --info-foreground: 210 40% 98%;
+
+    /* Vehicle Status Colors */
+    --status-pending: 32.1 94.6% 43.7%;
+    --status-in-progress: 221.2 83.2% 53.3%;
+    --status-quality-check: 262.1 83.3% 57.8%;
+    --status-delivered: 142.1 76.2% 36.3%;
+    --status-cancelled: 0 84.2% 60.2%;
+
+    /* User Role Colors */
+    --role-admin: 0 0% 20%;
+    --role-manager: 221.2 83.2% 53.3%;
+    --role-coordinator: 142.1 76.2% 36.3%;
+    --role-supervisor: 262.1 83.3% 57.8%;
+    --role-salesperson: 32.1 94.6% 43.7%;
+    --role-installer: 199.1 95.5% 39.8%;
+  }
+
+  .dark {
+    /* Dark Theme - OMSMS Brand Colors */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+
+    /* OMSMS Custom Status Colors - Dark Mode */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 32.1 94.6% 43.7%;
+    --warning-foreground: 20.5 90.2% 48.2%;
+    --info: 217.2 91.2% 59.8%;
+    --info-foreground: 222.2 84% 4.9%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* OMSMS Custom Component Styles */
+@layer components {
+  /* Container System */
+  .omsms-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .omsms-container-sm {
+    @apply max-w-2xl mx-auto px-4 sm:px-6;
+  }
+  
+  .omsms-container-lg {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Page Layout */
+  .omsms-page-header {
+    @apply space-y-2 pb-8 pt-6 md:pb-12 md:pt-10 lg:pb-16 lg:pt-12;
+  }
+  
+  .omsms-page-title {
+    @apply text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl lg:leading-[1.1];
+  }
+  
+  .omsms-page-description {
+    @apply max-w-2xl text-lg text-muted-foreground sm:text-xl;
+  }
+  
+  /* Card System */
+  .omsms-card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+  
+  .omsms-card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+  
+  .omsms-card-content {
+    @apply p-6 pt-0;
+  }
+  
+  .omsms-card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+  
+  /* Form Sections */
+  .omsms-form-section {
+    @apply space-y-6 rounded-lg border bg-card p-6 text-card-foreground shadow-sm;
+  }
+  
+  .omsms-form-header {
+    @apply space-y-2 pb-4 border-b;
+  }
+  
+  .omsms-form-title {
+    @apply text-lg font-semibold leading-none tracking-tight;
+  }
+  
+  .omsms-form-description {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  /* Status Badges */
+  .omsms-status-pending {
+    @apply bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800;
+  }
+  
+  .omsms-status-in-progress {
+    @apply bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800;
+  }
+  
+  .omsms-status-quality-check {
+    @apply bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800;
+  }
+  
+  .omsms-status-delivered {
+    @apply bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800;
+  }
+  
+  .omsms-status-cancelled {
+    @apply bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800;
+  }
+  
+  /* Data Tables */
+  .omsms-table {
+    @apply w-full border-collapse rounded-md border border-border;
+  }
+  
+  .omsms-table-header {
+    @apply bg-muted/50 text-muted-foreground font-medium;
+  }
+  
+  .omsms-table-row {
+    @apply border-b border-border hover:bg-muted/50 transition-colors;
+  }
+  
+  .omsms-table-cell {
+    @apply p-4 text-sm;
+  }
+  
+  /* Navigation */
+  .omsms-nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50;
+  }
+  
+  .omsms-nav-item-active {
+    @apply bg-accent text-accent-foreground;
+  }
+  
+  /* Buttons */
+  .omsms-btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+  }
+  
+  .omsms-btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .omsms-btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  .omsms-btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800;
+  }
+  
+  .omsms-btn-warning {
+    @apply bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800;
+  }
+  
+  .omsms-btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800;
+  }
+  
+  /* Loading States */
+  .omsms-skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+  
+  /* Focus States */
+  .omsms-focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Responsive Helpers */
+  .omsms-mobile-hidden {
+    @apply hidden sm:block;
+  }
+  
+  .omsms-mobile-only {
+    @apply block sm:hidden;
+  }
+  
+  /* Animations */
+  .omsms-fade-in {
+    @apply animate-in fade-in-0 duration-200;
+  }
+  
+  .omsms-slide-in {
+    @apply animate-in slide-in-from-bottom-2 duration-200;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .omsms-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  
+  .omsms-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .omsms-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .omsms-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+  
+  .omsms-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
+  }
+}

@@ -1,0 +1,64 @@
+// Master Database Schema (Tenant Registry)
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/master-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MASTER_DATABASE_URL")
+}
+
+model Tenant {
+  tenantId         String   @id @default(uuid()) @map("tenant_id")
+  tenantName       String   @map("tenant_name")
+  subdomain        String   @unique
+  databaseUrl      String   @map("database_url")
+  subscriptionTier String   @map("subscription_tier")
+  status           String   @default("active")
+  settings         Json     @default("{}")
+  features         Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  migrations TenantMigration[]
+  analytics  TenantAnalytics[]
+
+  @@map("tenants")
+}
+
+model TenantMigration {
+  migrationId   String   @id @default(uuid()) @map("migration_id")
+  tenantId      String?  @map("tenant_id")
+  migrationName String   @map("migration_name")
+  appliedAt     DateTime @default(now()) @map("applied_at")
+  migrationHash String?  @map("migration_hash")
+  status        String   @default("completed")
+  metadata      Json     @default("{}")
+
+  // Relations
+  tenant Tenant? @relation(fields: [tenantId], references: [tenantId], onDelete: SetNull)
+
+  @@map("tenant_migrations")
+}
+
+model TenantAnalytics {
+  analyticsId     String   @id @default(uuid()) @map("analytics_id")
+  tenantId        String?  @map("tenant_id")
+  datePeriod      DateTime @map("date_period") @db.Date
+  totalVehicles   Int      @default(0) @map("total_vehicles")
+  totalUsers      Int      @default(0) @map("total_users")
+  activeWorkflows Int      @default(0) @map("active_workflows")
+  storageUsedGb   Decimal  @default(0) @map("storage_used_gb") @db.Decimal(10, 2)
+  apiCallsCount   Int      @default(0) @map("api_calls_count")
+  revenueAmount   Decimal  @default(0) @map("revenue_amount") @db.Decimal(10, 2)
+  metrics         Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tenant Tenant? @relation(fields: [tenantId], references: [tenantId], onDelete: SetNull)
+
+  @@unique([tenantId, datePeriod], map: "unique_tenant_date")
+  @@map("tenant_analytics")
+}

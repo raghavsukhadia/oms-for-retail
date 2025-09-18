@@ -1,0 +1,217 @@
+// Tenant Database Schema (Per-tenant data) - SQLite version for local development
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/tenant-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Dynamic Role System
+model Role {
+  roleId          String   @id @default(uuid()) @map("role_id")
+  roleName        String   @unique @map("role_name")
+  roleDescription String?  @map("role_description")
+  roleColor       String?  @map("role_color")
+  roleLevel       Int      @default(0) @map("role_level") // For hierarchy (0 = highest)
+  isSystemRole    Boolean  @default(false) @map("is_system_role") // Prevent deletion
+  status          String   @default("active")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  users           User[]
+  rolePermissions RolePermission[]
+  
+  @@map("roles")
+}
+
+model RolePermission {
+  permissionId String @id @default(uuid()) @map("permission_id")
+  roleId       String @map("role_id")
+  resource     String // e.g., 'users', 'vehicles', 'reports'
+  action       String // e.g., 'create', 'read', 'update', 'delete'
+  conditions   String @default("{}") @map("conditions") // JSON string for conditional permissions
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  role Role @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  
+  @@unique([roleId, resource, action])
+  @@map("role_permissions")
+}
+
+// User model (existing with role integration)
+model User {
+  userId           String    @id @default(uuid()) @map("user_id")
+  email            String    @unique
+  firstName        String    @map("first_name")
+  lastName         String    @map("last_name")
+  password         String
+  phoneNumber      String?   @map("phone_number")
+  roleId           String    @map("role_id") // Changed from role enum to roleId
+  departmentId     String?   @map("department_id")
+  locationId       String?   @map("location_id")
+  isActive         Boolean   @default(true) @map("is_active")
+  lastLogin        DateTime? @map("last_login")
+  resetToken       String?   @map("reset_token")
+  resetTokenExpiry DateTime? @map("reset_token_expiry")
+  profilePicture   String?   @map("profile_picture")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  department       Department?      @relation(fields: [departmentId], references: [departmentId])
+  location         Location?        @relation(fields: [locationId], references: [locationId])
+  role             Role             @relation(fields: [roleId], references: [roleId])
+  assignedVehicles Vehicle[]        @relation("AssignedUser")
+  createdVehicles  Vehicle[]        @relation("CreatedByUser")
+  updatedVehicles  Vehicle[]        @relation("UpdatedByUser")
+  workflows        WorkflowStep[]
+  activities       ActivityLog[]
+  managedDepts     Department[]     @relation("DepartmentHead")
+  notifications    Notification[]
+  reports          Report[]
+
+  @@map("users")
+}
+
+// Department model  
+model Department {
+  departmentId   String    @id @default(uuid()) @map("department_id")
+  departmentName String    @unique @map("department_name")
+  description    String?
+  headUserId     String?   @map("head_user_id")
+  locationId     String?   @map("location_id")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  head     User?       @relation("DepartmentHead", fields: [headUserId], references: [userId])
+  users    User[]
+  vehicles Vehicle[]
+  location Location?   @relation(fields: [locationId], references: [locationId])
+
+  @@map("departments")
+}
+
+// Location model
+model Location {
+  locationId   String    @id @default(uuid()) @map("location_id")
+  locationName String    @unique @map("location_name")
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?   @map("zip_code")
+  country      String?
+  phoneNumber  String?   @map("phone_number")
+  contactEmail String?   @map("contact_email")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  users       User[]
+  departments Department[]
+  vehicles    Vehicle[]
+
+  @@map("locations")
+}
+
+// Vehicle model (simplified)
+model Vehicle {
+  vehicleId       String    @id @default(uuid()) @map("vehicle_id")
+  vin             String    @unique
+  make            String
+  model           String
+  year            Int
+  color           String?
+  licensePlate    String?   @map("license_plate")
+  status          String    @default("pending")
+  assignedUserId  String?   @map("assigned_user_id")
+  departmentId    String?   @map("department_id")
+  locationId      String?   @map("location_id")
+  createdBy       String    @map("created_by")
+  updatedBy       String?   @map("updated_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  assignedUser User?       @relation("AssignedUser", fields: [assignedUserId], references: [userId])
+  department   Department? @relation(fields: [departmentId], references: [departmentId])
+  location     Location?   @relation(fields: [locationId], references: [locationId])
+  createdByUser User       @relation("CreatedByUser", fields: [createdBy], references: [userId])
+  updatedByUser User?      @relation("UpdatedByUser", fields: [updatedBy], references: [userId])
+
+  @@map("vehicles")
+}
+
+// Workflow models (simplified)
+model WorkflowStep {
+  stepId      String   @id @default(uuid()) @map("step_id")
+  stepName    String   @map("step_name")
+  assignedTo  String   @map("assigned_to")
+  status      String   @default("pending")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [assignedTo], references: [userId])
+
+  @@map("workflow_steps")
+}
+
+// Activity Log model
+model ActivityLog {
+  activityId  String   @id @default(uuid()) @map("activity_id")
+  userId      String   @map("user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  description String?
+  metadata    String?  // JSON string
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("activity_logs")
+}
+
+// Notification model
+model Notification {
+  notificationId String   @id @default(uuid()) @map("notification_id")
+  userId         String   @map("user_id")
+  title          String
+  message        String
+  type           String   @default("info")
+  isRead         Boolean  @default(false) @map("is_read")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("notifications")
+}
+
+// Report model
+model Report {
+  reportId    String   @id @default(uuid()) @map("report_id")
+  reportName  String   @map("report_name")
+  reportType  String   @map("report_type")
+  generatedBy String   @map("generated_by")
+  filePath    String?  @map("file_path")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [generatedBy], references: [userId])
+
+  @@map("reports")
+}
