@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { vehicleApi, type VehicleWithRelations } from '@/lib/api/vehicles';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
 export interface VehicleWithWorkflows extends VehicleWithRelations {
@@ -35,6 +36,7 @@ export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn
     refreshInterval = 30000 // 30 seconds default
   } = options;
 
+  const { isAuthenticated, isHydrated } = useAuthStore();
   const [vehicles, setVehicles] = useState<VehicleWithWorkflows[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +81,12 @@ export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn
     }
   }, [includeWorkflows]);
 
-  // Initial fetch
+  // Initial fetch - wait for auth hydration
   useEffect(() => {
-    fetchVehicles();
-  }, [fetchVehicles]);
+    if (isHydrated && isAuthenticated) {
+      fetchVehicles();
+    }
+  }, [fetchVehicles, isHydrated, isAuthenticated]);
 
   // Auto-refresh if enabled
   useEffect(() => {

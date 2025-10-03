@@ -1,14 +1,31 @@
-import { PrismaClient as MasterClient } from '../../../database/generated/master-client';
-import { PrismaClient as TenantClient } from '../../../database/generated/tenant-client';
+import { PrismaClient as MasterClient } from '../../packages/database/generated/master-client';
+import { PrismaClient as TenantClient } from '../../packages/database/generated/tenant-client';
+
+// Validate required environment variables
+if (!process.env.MASTER_DATABASE_URL) {
+  throw new Error('MASTER_DATABASE_URL environment variable is required');
+}
+
+if (!process.env.TENANT_DATABASE_URL_TEMPLATE) {
+  throw new Error('TENANT_DATABASE_URL_TEMPLATE environment variable is required');
+}
 
 // Cache for tenant database connections
 const tenantClients = new Map<string, TenantClient>();
+
+/**
+ * Generate tenant database URL from template
+ */
+function generateTenantDatabaseUrl(databaseName: string): string {
+  const template = process.env.TENANT_DATABASE_URL_TEMPLATE!;
+  return template.replace('{database}', databaseName);
+}
 
 // Master database client (singleton)
 export const masterDb = new MasterClient({
   datasources: {
     db: {
-      url: process.env.MASTER_DATABASE_URL
+      url: process.env.MASTER_DATABASE_URL!
     }
   }
 });
@@ -49,7 +66,14 @@ export async function getTenantDb(tenantId: string): Promise<TenantClient> {
   try {
     await tenantClient.$connect();
   } catch (error) {
-    throw new Error(`Failed to connect to tenant database: ${tenantId}`);
+    console.error(`Failed to connect to tenant database for ${tenantId}:`, {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      tenantId,
+      databaseUrl: tenant.databaseUrl
+    });
+    throw new Error(`Failed to connect to tenant database: ${tenantId} - ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   // Cache the client
@@ -127,10 +151,8 @@ export async function checkDatabaseHealth(): Promise<{
  * Create new tenant database with proper schema setup
  */
 export async function createTenantDatabase(tenantId: string, subdomain: string): Promise<string> {
-  const databaseName = `omsms_tenant_${subdomain}`;
-  const databaseUrl = process.env.TENANT_DATABASE_URL_TEMPLATE 
-    ? process.env.TENANT_DATABASE_URL_TEMPLATE.replace('{database}', databaseName)
-    : `postgresql://postgres:password@localhost:5432/${databaseName}`;
+  const databaseName = subdomain; // Don't add prefix, template already has it
+  const databaseUrl = generateTenantDatabaseUrl(databaseName);
 
   let newTenantClient: TenantClient | null = null;
 
@@ -138,7 +160,7 @@ export async function createTenantDatabase(tenantId: string, subdomain: string):
     console.log(`Creating tenant database: ${databaseName}`);
     
     // Create the database using raw SQL
-    await masterDb.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
+    await masterDb.$executeRawUnsafe(`CREATE DATABASE "omsms_tenant_${subdomain}"`);
 
     // Create tenant client to apply schema
     newTenantClient = new TenantClient({

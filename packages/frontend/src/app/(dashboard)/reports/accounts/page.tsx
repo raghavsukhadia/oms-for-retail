@@ -63,11 +63,15 @@ export default function AccountsPage() {
         paymentApi.getPaymentSummary()
       ]);
       
-      setPayments(paymentsData);
+      // Ensure payments is always an array
+      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
       setSummary(summaryData);
     } catch (error) {
       console.error('Error fetching payment data:', error);
       toast.error('Failed to fetch payment data. Please try again.');
+      // Set empty array on error to prevent filter errors
+      setPayments([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -77,7 +81,7 @@ export default function AccountsPage() {
     fetchData();
   }, []);
 
-  const filteredPayments = payments.filter(payment => {
+  const filteredPayments = (payments || []).filter(payment => {
     const matchesSearch = 
       payment.vehicle.carNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.vehicle.ownerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -186,7 +190,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
                   <p className="text-2xl font-bold text-red-600">
-                    {formatCurrency(Number(summary.totalOutstanding))}
+                    {formatCurrency(Number(summary.totalOutstanding || 0))}
                   </p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-600" />
@@ -200,7 +204,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Amount</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(Number(summary.totalAmount))}
+                    {formatCurrency(Number(summary.totalAmount || 0))}
                   </p>
                 </div>
                 <IndianRupee className="h-8 w-8 text-blue-600" />
@@ -214,7 +218,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Amount Paid</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(Number(summary.totalPaid))}
+                    {formatCurrency(Number(summary.totalPaid || 0))}
                   </p>
                 </div>
                 <Calendar className="h-8 w-8 text-green-600" />
@@ -227,12 +231,12 @@ export default function AccountsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                  <p className="text-2xl font-bold text-gray-700">{summary.totalPayments}</p>
+                  <p className="text-2xl font-bold text-gray-700">{summary.totalPayments || 0}</p>
                 </div>
                 <div className="text-right">
                   <div className="flex gap-1 text-xs">
                     <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                      Pending: {summary.statusCounts.pending || 0}
+                      Pending: {summary.statusCounts?.pending || 0}
                     </span>
                   </div>
                 </div>

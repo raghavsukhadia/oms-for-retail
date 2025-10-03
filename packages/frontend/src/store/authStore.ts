@@ -26,6 +26,9 @@ interface AuthState {
   
   // Tenant switching for multi-tenant users
   switchTenant: (tenant: Tenant, token: string) => void;
+  
+  // Auto-login for development
+  autoLogin: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -47,6 +50,70 @@ export const useAuthStore = create<AuthState>()(
       setRefreshToken: (refreshToken) => set({ refreshToken }),
       setLoading: (loading) => set({ isLoading: loading }),
       setHydrated: (hydrated) => set({ isHydrated: hydrated }),
+
+      // Auto-login for development
+      autoLogin: async () => {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+          try {
+            // Import authApi dynamically to avoid circular imports
+            const { authApi } = await import('@/lib/api/auth');
+            
+            // Attempt to login with demo credentials
+            const response = await authApi.tenantLogin({
+              subdomain: 'demo',
+              email: 'admin@demo.com',
+              password: 'admin123'
+            });
+            
+            if (response.success && response.data) {
+              const { user, tenant, tokens } = response.data;
+              set({
+                user,
+                tenant,
+                token: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+                isAuthenticated: true,
+                isLoading: false
+              });
+            }
+          } catch (error) {
+            console.warn('Auto-login failed:', error);
+            // Fallback to demo data if login fails
+            const demoUser = {
+              userId: 'demo-user',
+              email: 'admin@demo.com',
+              firstName: 'Admin',
+              lastName: 'User',
+              role: 'admin',
+              status: 'active',
+              departmentId: null,
+              locationId: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            const demoTenant = {
+              tenantId: 'demo-tenant',
+              tenantName: 'Demo Organization',
+              subdomain: 'demo',
+              status: 'active',
+              subscriptionTier: 'professional',
+              features: {},
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            set({
+              user: demoUser,
+              tenant: demoTenant,
+              token: 'demo-token',
+              refreshToken: 'demo-refresh-token',
+              isAuthenticated: true,
+              isLoading: false
+            });
+          }
+        }
+      },
 
       login: (user, tenant, accessToken, refreshToken) => set({
         user,

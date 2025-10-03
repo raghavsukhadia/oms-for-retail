@@ -1,13 +1,20 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { createWriteStream, createReadStream } from 'fs';
+import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
+import { Storage as GCSStorage } from '@google-cloud/storage'; // Example import for GCS
 
 export interface StorageConfig {
-  provider: 'local' | 's3' | 'azure' | 'cloudflare';
+  provider: 'local' | 's3' | 'azure' | 'cloudflare' | 'gcs';
   local?: {
     uploadPath: string;
     baseUrl: string;
+  };
+  gcs?: {
+    bucketName: string;
+    projectId: string;
+    keyFilename?: string;
+    credentials?: any;
   };
   s3?: {
     region: string;
@@ -105,6 +112,85 @@ export class LocalStorageProvider implements StorageProvider {
     } catch {
       return false;
     }
+  }
+}
+
+// Google Cloud Storage Provider (placeholder for future implementation)
+export class GCSStorageProvider implements StorageProvider {
+  private storage: GCSStorage;
+  private bucketName: string;
+
+  constructor(config: NonNullable<StorageConfig['gcs']>) {
+    this.bucketName = config.bucketName;
+    
+    this.storage = new GCSStorage({
+      projectId: config.projectId,
+      keyFilename: config.keyFilename,
+      credentials: config.credentials
+    });
+  }
+
+  async upload(file: StorageFile, destination: string): Promise<StorageResult> {
+    const bucket = this.storage.bucket(this.bucketName);
+    const filePath = `${destination}/${file.fileName}`;
+    const gcsFile = bucket.file(filePath);
+
+    const stream = gcsFile.createWriteStream({
+      metadata: {
+        contentType: file.mimeType,
+        metadata: {
+          originalName: file.originalName
+        }
+      }
+    });
+
+    return new Promise((resolve, reject) => {
+      stream.on('error', reject);
+      stream.on('finish', () => {
+        resolve({
+          fileName: file.fileName,
+          filePath: filePath,
+          url: this.getUrl(filePath),
+          size: file.size
+        });
+      });
+
+      if (file.buffer) {
+        stream.end(file.buffer);
+      } else if (file.stream) {
+        file.stream.pipe(stream);
+      } else {
+        reject(new Error('No file data provided'));
+      }
+    });
+  }
+
+  async delete(filePath: string): Promise<void> {
+    const bucket = this.storage.bucket(this.bucketName);
+    await bucket.file(filePath).delete();
+  }
+
+  getUrl(filePath: string): string {
+    return `https://storage.googleapis.com/${this.bucketName}/${filePath}`;
+  }
+  
+  async getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
+    const bucket = this.storage.bucket(this.bucketName);
+    const file = bucket.file(filePath);
+    
+    const [signedUrl] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + expiresIn * 1000
+    });
+    
+    return signedUrl;
+  }
+
+  async exists(filePath: string): Promise<boolean> {
+    const bucket = this.storage.bucket(this.bucketName);
+    const file = bucket.file(filePath);
+    const [exists] = await file.exists();
+    return exists;
   }
 }
 
@@ -211,7 +297,13 @@ export class StorageManager {
           throw new Error('Local storage configuration is required');
         }
         return new LocalStorageProvider(config.local);
-      
+
+      case 'gcs':
+        if (!config.gcs) {
+          throw new Error('GCS storage configuration is required');
+        }
+        return new GCSStorageProvider(config.gcs);
+
       case 's3':
         if (!config.s3) {
           throw new Error('S3 storage configuration is required');
@@ -305,6 +397,12 @@ export function createStorageManager(): StorageManager {
       uploadPath: process.env.LOCAL_UPLOAD_PATH || './uploads',
       baseUrl: process.env.LOCAL_BASE_URL || 'http://localhost:3001/uploads'
     },
+    gcs: process.env.GCS_BUCKET_NAME ? {
+      bucketName: process.env.GCS_BUCKET_NAME!,
+      projectId: process.env.GCS_PROJECT_ID!,
+      keyFilename: process.env.GCS_KEY_FILENAME,
+      credentials: process.env.GCS_CREDENTIALS ? JSON.parse(process.env.GCS_CREDENTIALS) : undefined
+    } : undefined,
     s3: process.env.AWS_S3_BUCKET ? {
       region: process.env.AWS_REGION!,
       bucket: process.env.AWS_S3_BUCKET!,

@@ -202,7 +202,7 @@ export function UserRights() {
     try {
       const response = await roleApi.getActiveRoles();
       if (response.success) {
-        const rolesData = response.data || [];
+        const rolesData = Array.isArray(response.data) ? response.data : [];
         setRoles(rolesData);
         
         // Set default role if form is reset
@@ -214,6 +214,7 @@ export function UserRights() {
       }
     } catch (error) {
       console.error("Failed to fetch roles:", error);
+      setRoles([]); // Ensure roles is always an array
     }
   };
 
@@ -264,7 +265,7 @@ export function UserRights() {
         
         setIsDialogOpen(false);
         setEditingUser(null);
-        const defaultRole = roles.find(r => r.roleName === 'salesperson') || roles[0];
+        const defaultRole = Array.isArray(roles) ? (roles.find(r => r.roleName === 'salesperson') || roles[0]) : null;
         form.reset({
           email: "",
           password: "",
@@ -333,7 +334,7 @@ export function UserRights() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingUser(null);
-    const defaultRole = roles.find(r => r.roleName === 'salesperson') || roles[0];
+    const defaultRole = Array.isArray(roles) ? (roles.find(r => r.roleName === 'salesperson') || roles[0]) : null;
     form.reset({
       email: "",
       password: "",
@@ -378,7 +379,7 @@ export function UserRights() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
-              const defaultRole = roles.find(r => r.roleName === 'salesperson') || roles[0];
+              const defaultRole = Array.isArray(roles) ? (roles.find(r => r.roleName === 'salesperson') || roles[0]) : null;
               form.reset({
                 email: "",
                 password: "",
@@ -621,7 +622,7 @@ export function UserRights() {
       {/* Role Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {Object.entries(roleStats).map(([roleName, count]) => {
-          const role = roles.find(r => r.roleName === roleName);
+          const role = Array.isArray(roles) ? roles.find(r => r.roleName === roleName) : null;
           const IconComponent = roleIcons[roleName as keyof typeof roleIcons] || Shield;
           return (
             <Card key={roleName}>

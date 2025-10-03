@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env*
+packages/frontend
+packages/backend/src
+packages/database/prisma
+packages/database/node_modules
+packages/*/.next
+packages/*/dist
+Dockerfile

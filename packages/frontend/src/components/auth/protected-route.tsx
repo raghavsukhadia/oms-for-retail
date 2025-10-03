@@ -34,8 +34,25 @@ export function ProtectedRoute({
 
       // Check if user is authenticated
       if (!isAuthenticated || !token) {
-        router.push(redirectTo);
-        return;
+        // Auto-login for development
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+          try {
+            await useAuthStore.getState().autoLogin();
+            // After auto-login, check again
+            const { isAuthenticated: newAuth, token: newToken } = useAuthStore.getState();
+            if (!newAuth || !newToken) {
+              router.push(redirectTo);
+              return;
+            }
+          } catch (error) {
+            console.warn('Auto-login failed:', error);
+            router.push(redirectTo);
+            return;
+          }
+        } else {
+          router.push(redirectTo);
+          return;
+        }
       }
 
       // Check if user object exists

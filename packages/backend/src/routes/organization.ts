@@ -66,6 +66,7 @@ router.use(rateLimiter);
  * @access Private (All authenticated users need basic org info)
  */
 router.get('/settings', 
+  authenticate,
   authorizeRoles(['admin', 'manager', 'coordinator', 'supervisor', 'salesperson', 'installer']),
   OrganizationController.getOrganizationSettings
 );
@@ -76,6 +77,7 @@ router.get('/settings',
  * @access Private (Admin/Manager)
  */
 router.put('/settings', 
+  authenticate,
   authorizeRoles(['admin', 'manager']),
   OrganizationController.updateOrganizationSettings
 );

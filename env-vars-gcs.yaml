@@ -1,0 +1,7 @@
+STORAGE_PROVIDER: gcs
+GCS_BUCKET_NAME: omsms-storage-bucket
+GCS_PROJECT_ID: retail-oms-saas
+MASTER_DATABASE_URL: postgresql://omsms_admin:Password123%21@35.200.141.110:5432/omsms_master
+TENANT_DATABASE_URL_TEMPLATE: postgresql://omsms_admin:Password123%21@35.200.141.110:5432/omsms_tenant_{database}
+JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+CORS_ORIGIN: http://localhost:3000,http://localhost:3001,http://localhost:3002

@@ -97,7 +97,29 @@ export type VehicleStatus =
   | 'pending'
   | 'in_progress' 
   | 'quality_check'
+  | 'completed'
   | 'delivered'
+  | 'cancelled';
+
+export type InstallationStatus = 
+  | 'pending' 
+  | 'in_progress' 
+  | 'completed' 
+  | 'failed' 
+  | 'cancelled';
+
+export type PaymentStatus = 
+  | 'pending' 
+  | 'partial' 
+  | 'paid' 
+  | 'overdue' 
+  | 'cancelled';
+
+export type WorkflowStatus = 
+  | 'pending' 
+  | 'in_progress' 
+  | 'completed' 
+  | 'failed' 
   | 'cancelled';
 
 export interface WorkflowInstance {

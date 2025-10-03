@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
-import { authRateLimiter } from '../middleware/rateLimiter';
+import { publicRateLimiter } from '../middleware/rateLimiter';
 import { attachDatabases } from '../lib/database';
 
 export const publicRoutes = Router();
 
 // Apply rate limiting to public auth routes
-publicRoutes.use(authRateLimiter);
+publicRoutes.use(publicRateLimiter);
 
 // Apply database middleware (master DB only for public routes)
 publicRoutes.use(attachDatabases());

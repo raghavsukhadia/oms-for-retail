@@ -20,6 +20,9 @@ authRoutes.post('/register-tenant', AuthController.registerTenant);
 // Login - requires tenant identification
 authRoutes.post('/login', extractTenant, AuthController.login);
 
+// Tenant login - alias for login (for frontend compatibility)
+authRoutes.post('/tenant-login', extractTenant, AuthController.login);
+
 // Register user within tenant - requires tenant identification
 authRoutes.post('/register', extractTenant, AuthController.register);
 

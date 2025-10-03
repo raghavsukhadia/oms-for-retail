@@ -346,7 +346,17 @@ export class OrganizationController {
       }
 
       const tenantDb = await getTenantDb(req.tenantId);
-      const logoUrl = `${config.storage.local!.baseUrl}/logos/${req.tenantId}/${req.file.filename}`;
+      
+      // Generate logo URL based on environment
+      let logoUrl: string;
+      if (config.nodeEnv === 'production' || process.env.NODE_ENV === 'production') {
+        // In production/Cloud Run, use the Cloud Run URL
+        const cloudRunUrl = process.env.CLOUD_RUN_URL || 'https://omsms-backend-610250363653.asia-south1.run.app';
+        logoUrl = `${cloudRunUrl}/uploads/logos/${req.tenantId}/${req.file.filename}`;
+      } else {
+        // In development, use local URL
+        logoUrl = `${config.storage.local!.baseUrl}/logos/${req.tenantId}/${req.file.filename}`;
+      }
 
       console.log('Generated logo URL:', logoUrl);
 

@@ -6,15 +6,19 @@
 import { useEffect, useState } from 'react';
 import { setDepartmentColor, clearDepartmentColorCache } from '@/lib/utils/department-colors';
 import { departmentApi, type DepartmentWithRelations } from '@/lib/api/masterData';
+import { useAuthStore } from '@/store/authStore';
 
 export function useDepartmentColors() {
+  const { isAuthenticated, isHydrated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<DepartmentWithRelations[]>([]);
 
   useEffect(() => {
-    loadDepartmentColors();
-  }, []);
+    if (isHydrated && isAuthenticated) {
+      loadDepartmentColors();
+    }
+  }, [isHydrated, isAuthenticated]);
 
   const loadDepartmentColors = async () => {
     try {

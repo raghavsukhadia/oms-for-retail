@@ -85,13 +85,8 @@ export const organizationApi = {
     
     // For file uploads, we need to override the default headers
     // Don't set Content-Type - let the browser set it with boundary
-    // Validate API URL exists
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) {
-      throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
-    }
-    
-    const response = await fetch(`${apiUrl}/organization/logo`, {
+    // Use the API client's base URL
+    const response = await fetch(`${apiClient.baseUrl}/organization/logo`, {
       method: 'POST',
       headers: {
         // Don't set Content-Type for FormData - browser will set it with boundary

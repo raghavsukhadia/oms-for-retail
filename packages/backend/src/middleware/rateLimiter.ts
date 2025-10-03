@@ -12,15 +12,22 @@ const defaultLimiter = new RateLimiterMemory({
 
 const authLimiter = new RateLimiterMemory({
   keyPrefix: 'auth',
-  points: 5, // 5 login attempts
+  points: 100, // 100 login attempts (increased for development)
   duration: 60, // per 60 seconds
-  blockDuration: 300, // Block for 5 minutes if limit exceeded
+  blockDuration: 60, // Block for 1 minute if limit exceeded (reduced)
 });
 
 const uploadLimiter = new RateLimiterMemory({
   keyPrefix: 'upload',
   points: 10, // 10 uploads
   duration: 60, // per 60 seconds
+});
+
+const publicLimiter = new RateLimiterMemory({
+  keyPrefix: 'public',
+  points: 200, // 200 requests (more lenient for public endpoints)
+  duration: 60, // per 60 seconds
+  blockDuration: 30, // Block for 30 seconds if limit exceeded
 });
 
 function getClientIP(req: Request): string {
@@ -62,3 +69,4 @@ function createRateLimitMiddleware(limiter: RateLimiterMemory) {
 export const rateLimiter = createRateLimitMiddleware(defaultLimiter);
 export const authRateLimiter = createRateLimitMiddleware(authLimiter);
 export const uploadRateLimiter = createRateLimitMiddleware(uploadLimiter);
+export const publicRateLimiter = createRateLimitMiddleware(publicLimiter);

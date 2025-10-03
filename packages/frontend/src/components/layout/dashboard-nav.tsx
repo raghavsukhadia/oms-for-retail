@@ -15,7 +15,11 @@ import {
   MapPin,
   Building,
   UserCircle,
-  Building2
+  Building2,
+  Phone,
+  Wrench,
+  ClipboardList,
+  Activity
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -51,7 +55,28 @@ const navigationItems: NavItem[] = [
     href: '/vehicles/inward',
     icon: Car,
   },
-
+  {
+    title: 'Tracker',
+    href: '/tracker',
+    icon: Activity,
+    children: [
+      {
+        title: 'Call Follow-Up',
+        href: '/tracker/call-follow-up',
+        icon: Phone,
+      },
+      {
+        title: 'Service Tracker',
+        href: '/tracker/service',
+        icon: Wrench,
+      },
+      {
+        title: 'Customer Requirements',
+        href: '/tracker/requirements',
+        icon: ClipboardList,
+      },
+    ],
+  },
   {
     title: 'Reports',
     href: '/reports',

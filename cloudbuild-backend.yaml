@@ -1,0 +1,13 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'gcr.io/retail-oms-saas/omsms-backend:latest',
+        '-f',
+        'packages/backend/Dockerfile.minimal',
+        '.'
+      ]
+images:
+  - 'gcr.io/retail-oms-saas/omsms-backend:latest'

@@ -1,0 +1,23 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: omsms-backend
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/PROJECT_ID/omsms-backend:latest   # 🔧 replace
+          ports:
+            - containerPort: 8080
+          env:
+            # Use Cloud SQL unix socket:
+            - name: MASTER_DATABASE_URL
+              value: postgresql://omsms_admin:__SECRET__@/omsms_master?host=/cloudsql/PROJECT_ID:REGION:INSTANCE_NAME&schema=public
+            - name: JWT_SECRET
+              value: __SECRET__
+            - name: NODE_ENV
+              value: production
+      # Attach Cloud SQL instance
+      containerConcurrency: 80
+      timeoutSeconds: 60

@@ -18,7 +18,7 @@ import {
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1), // Use min(1) to match shared schema
-  tenantId: z.string().optional()
+  subdomain: z.string().optional()
 });
 
 const registerSchema = z.object({

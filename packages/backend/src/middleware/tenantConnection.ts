@@ -104,12 +104,19 @@ export const tenantConnectionMiddleware = async (
       logger.debug(`Tenant connection established for: ${tenantIdentifier}`);
       next();
     } catch (dbError) {
-      logger.error(`Failed to connect to tenant database for ${tenantIdentifier}:`, dbError);
+      logger.error(`Failed to connect to tenant database for ${tenantIdentifier}:`, {
+        error: dbError,
+        message: dbError instanceof Error ? dbError.message : 'Unknown error',
+        stack: dbError instanceof Error ? dbError.stack : undefined,
+        tenantIdentifier,
+        tenantDatabaseUrl: tenant.databaseUrl
+      });
       
       res.status(500).json({
         success: false,
         error: `Cannot connect to tenant database. Please contact support.`,
-        code: 'TENANT_DB_CONNECTION_ERROR'
+        code: 'TENANT_DB_CONNECTION_ERROR',
+        details: dbError instanceof Error ? dbError.message : 'Unknown error'
       });
       return;
     }

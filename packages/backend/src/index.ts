@@ -41,8 +41,13 @@ import paymentRoutes from './routes/payments';
 import organizationRoutes from './routes/organization';
 // Public and tenant middleware
 import publicRoutes from './routes/public';
-import { tenantConnectionMiddleware } from './middleware/tenantConnection';const app = express();
+import { tenantConnectionMiddleware } from './middleware/tenantConnection';
+
+const app = express();
 const httpServer = createServer(app);
+
+// Trust proxy for Cloud Run deployment
+app.set('trust proxy', 1);
 
 // Initialize production services
 PerformanceOptimizer.initialize();
@@ -72,7 +77,27 @@ app.use(SecurityManager.requestSizeLimit('10mb'));
 
 // CORS configuration
 app.use(cors({
-  origin: config.app.corsOrigin,
+  origin: (origin, callback) => {
+    console.log('CORS check - Origin:', origin);
+    console.log('CORS check - Allowed origins:', config.app.corsOrigin);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('CORS check - No origin, allowing');
+      return callback(null, true);
+    }
+    
+    const allowedOrigins = config.app.corsOrigin.split(',').map(o => o.trim());
+    console.log('CORS check - Allowed origins array:', allowedOrigins);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('CORS check - Origin allowed');
+      return callback(null, true);
+    }
+    
+    console.log('CORS check - Origin not allowed');
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Requested-With']
@@ -102,8 +127,8 @@ if (isDevelopment) {
 // Rate limiting
 app.use(rateLimiter);
 
-// Static files for uploads (development only)
-if (isDevelopment && config.storage.provider === 'local') {
+// Static files for uploads
+if (config.storage.provider === 'local') {
   const path = require('path');
   const uploadPath = path.resolve(config.storage.local!.uploadPath);
   console.log('Static file serving configured for:', uploadPath);
@@ -118,7 +143,59 @@ if (isDevelopment && config.storage.provider === 'local') {
   }));
 }
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      name: 'OMSMS API',
+      version: '1.0.0',
+      status: 'running',
+      environment: config.app.environment,
+      documentation: '/api/docs',
+      health: '/api/health',
+      endpoints: {
+        auth: '/api/auth',
+        health: '/api/health',
+        public: '/api/public',
+        tenants: '/api/tenants',
+        users: '/api/users'
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Routes
+
+// Base API route
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      name: 'OMSMS API',
+      version: '1.0.0',
+      status: 'running',
+      environment: config.app.environment,
+      documentation: '/api/docs',
+      health: '/api/health',
+      endpoints: {
+        auth: '/api/auth',
+        health: '/api/health',
+        public: '/api/public',
+        tenants: '/api/tenants',
+        users: '/api/users',
+        locations: '/api/locations',
+        departments: '/api/departments',
+        roles: '/api/roles',
+        vehicles: '/api/vehicles',
+        workflows: '/api/workflows',
+        reports: '/api/reports'
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
 
 // --- PUBLIC ROUTES (No tenant required, use master DB only) ---
 app.use('/api/public', publicRoutes);

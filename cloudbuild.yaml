@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        '$_IMAGE',
+        '-f',
+        'packages/backend/Dockerfile',
+        '.'
+      ]
+images:
+  - '$_IMAGE'
+
+substitutions:
+  _IMAGE: "asia-south1-docker.pkg.dev/retail-oms-saas/omsms-repo/omsms-backend:latest"
+

@@ -1,0 +1,36 @@
+# Simple Dockerfile for Cloud Run deployment
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package.json ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/database/package.json packages/database/package.json
+
+# Install dependencies (including devDependencies for build)
+RUN npm install
+
+# Copy source files
+COPY packages/backend ./
+COPY packages/shared packages/shared
+COPY packages/database packages/database
+
+# Generate Prisma clients
+RUN npx prisma generate --schema packages/database/prisma/master-schema.prisma
+RUN npx prisma generate --schema packages/database/prisma/tenant-schema.prisma
+
+# Build shared package
+RUN cd packages/shared && npm run build
+
+# Build backend
+RUN npm run build
+
+# Expose port
+EXPOSE 8080
+
+# Start the server
+CMD ["node", "dist/index.js"]

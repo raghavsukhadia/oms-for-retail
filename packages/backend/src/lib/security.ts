@@ -167,7 +167,7 @@ export class SecurityManager {
         req.body = sanitizeObject(req.body);
       }
       if (req.query) {
-        req.query = sanitizeObject(req.query);
+        Object.assign(req.query, sanitizeObject(req.query));
       }
       if (req.params) {
         req.params = sanitizeObject(req.params);
